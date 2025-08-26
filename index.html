@@ -24,15 +24,25 @@
   </div>
 
   <!-- Feature 1: Speech-to-Text -->
-  <section class="feature light" id="feature1" aria-labelledby="stt-heading">
-    <div class="content">
-      <h1 id="stt-heading">OUT THERE</h1>
-      <h2>Live Speech-to-Text</h2>
-      <p>Convert speech into text in real time for better accessibility.</p>
-      <button onclick="startRecording()">Try Now</button>
+<section class="feature light" id="feature1" aria-labelledby="stt-heading">
+  <div class="content">
+    <h1 id="stt-heading">OUT THERE</h1>
+    <h2>Live Speech-to-Text</h2>
+    <p>Convert speech into text in real time for better accessibility.</p>
+    
+    <div class="stt-controls">
+      <button onclick="startRecording()">🎙 Start Listening</button>
+      <button onclick="stopRecording()">⏹ Stop Listening</button>
+      <button onclick="readLastTranscript()">🔊 Read Last</button>
     </div>
-    <img src="images/stt.jpg" alt="Speech to Text">
-  </section>
+
+    <!-- Transcript history -->
+    <div id="transcriptHistory" class="transcript" aria-live="polite">
+      Transcript history will appear here...
+    </div>
+  </div>
+  <img src="images/stt.jpg" alt="Speech to Text">
+</section>
 
   <!-- Feature 2: Summarization -->
   <section class="feature dark" id="feature2" aria-labelledby="summarize-heading">
@@ -93,3 +103,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
