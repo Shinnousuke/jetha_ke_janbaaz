@@ -150,8 +150,33 @@ button#send-btn:hover { background: #45a049; }
 /* =========================
    Transcripts / Helper text
 ========================= */
-.helper { margin-top: 8px; font-size: 14px; color: #666; }
-.transcript { margin-top: 12px; padding: 10px; border-radius: 8px; border: 1px dashed #999; min-height: 60px; background: #f7f7f7; }
+/* =========================
+   Transcripts / Helper text
+========================= */
+.stt-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.transcript {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #444;
+  min-height: 100px;
+  background: #f9f9f9;
+  font-size: 16px;
+  font-weight: 500;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.helper { 
+  margin-top: 8px; 
+  font-size: 14px; 
+  color: #666; 
+}
 
 /* =========================
    Animations
@@ -197,3 +222,4 @@ footer {
   .feature { flex-direction: column; }
   figure { display: none; }
 }
+
