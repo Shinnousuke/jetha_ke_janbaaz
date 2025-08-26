@@ -1,18 +1,107 @@
-// Speech-to-Text
+/* =======================
+   Unified AI Accessibility JS
+   Features: TTS, STT, Summarize, Voice Commands
+========================== */
+
+// ----- Elements for TTS -----
+const textInput = document.getElementById('textInput');
+const voicesSelect = document.getElementById('voices');
+const rateInput = document.getElementById('rate');
+const rateVal = document.getElementById('rateVal');
+const pitchInput = document.getElementById('pitch');
+const pitchVal = document.getElementById('pitchVal');
+const speakBtn = document.getElementById('speakBtn');
+const stopBtn = document.getElementById('stopBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const resumeBtn = document.getElementById('resumeBtn');
+const clearBtn = document.getElementById('clearBtn');
+const liveToggle = document.getElementById('liveToggle');
+
+let voices = [];
+let utterance = null;
+let liveTimer = null;
+
+// Populate voice list
+function populateVoices() {
+  voices = speechSynthesis.getVoices().sort((a,b) => a.name.localeCompare(b.name));
+  voicesSelect.innerHTML = '';
+  voices.forEach((v,i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${v.name}${v.lang ? ' — ' + v.lang : ''}${v.default ? ' (default)' : ''}`;
+    voicesSelect.appendChild(opt);
+  });
+}
+speechSynthesis.onvoiceschanged = populateVoices;
+populateVoices();
+
+// Create utterance
+function createUtterance(text) {
+  if (!text) return null;
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = parseFloat(rateInput.value);
+  u.pitch = parseFloat(pitchInput.value);
+  const selectedVoice = voices[voicesSelect.value];
+  if (selectedVoice) u.voice = selectedVoice;
+  u.lang = (u.voice && u.voice.lang) || 'en-US';
+  u.onend = () => console.log('Speech ended');
+  u.onerror = (e) => console.error('Speech error', e);
+  return u;
+}
+
+// TTS Functions
+function speakText() {
+  const text = textInput.value.trim();
+  if (!text) {
+    speechSynthesis.speak(new SpeechSynthesisUtterance('Please enter some text to speak.'));
+    return;
+  }
+  speechSynthesis.cancel();
+  utterance = createUtterance(text);
+  if (utterance) speechSynthesis.speak(utterance);
+}
+function stopSpeech(){ speechSynthesis.cancel(); }
+function pauseSpeech(){ if(speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.pause(); }
+function resumeSpeech(){ if(speechSynthesis.paused) speechSynthesis.resume(); }
+
+// Live typing TTS
+function handleLiveSpeak() {
+  if (!liveToggle.checked) { if (liveTimer) clearTimeout(liveTimer); return; }
+  if (liveTimer) clearTimeout(liveTimer);
+  liveTimer = setTimeout(() => speakText(), 600);
+}
+
+// Update rate/pitch display
+rateInput.addEventListener('input', () => { rateVal.textContent = rateInput.value; });
+pitchInput.addEventListener('input', () => { pitchVal.textContent = pitchInput.value; });
+
+// Button events
+speakBtn.addEventListener('click', speakText);
+stopBtn.addEventListener('click', stopSpeech);
+pauseBtn.addEventListener('click', pauseSpeech);
+resumeBtn.addEventListener('click', resumeSpeech);
+clearBtn.addEventListener('click', () => { textInput.value=''; textInput.focus(); stopSpeech(); });
+textInput.addEventListener('input', handleLiveSpeak);
+
+// Keyboard shortcuts: Ctrl+Enter = Speak, Esc = Stop
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); speakText(); }
+  else if(e.key==='Escape'){ stopSpeech(); }
+});
+
+// ----- Speech-to-Text -----
 let recognition;
 function startRecording() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return alert('SpeechRecognition not supported in this browser.');
+  if(!SpeechRecognition) return alert('SpeechRecognition not supported in this browser.');
   recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = true;
-  recognition.interimResults = true;
+  recognition.lang='en-US';
+  recognition.continuous=true;
+  recognition.interimResults=true;
   recognition.onresult = (event) => {
-    let transcript = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) {
-        transcript += event.results[i][0].transcript + ' ';
-      }
+    let transcript='';
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      if(event.results[i].isFinal) transcript += event.results[i][0].transcript+' ';
     }
     console.log('Transcript:', transcript);
     alert("Captured: " + transcript);
@@ -20,67 +109,70 @@ function startRecording() {
   recognition.start();
 }
 
-// Summarize using Hugging Face
+// ----- Summarization using Hugging Face API -----
 async function summarizeText() {
   const text = prompt("Enter text to summarize:");
   const token = prompt("Enter Hugging Face token:");
   if (!text || !token) return;
-  const res = await fetch("https://api-inference.huggingface.co/models/facebook/bart-large-cnn", {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
-    body: JSON.stringify({ inputs: text })
-  });
-  const data = await res.json();
-  alert("Summary: " + (data[0]?.summary_text || 'Error'));
-}
-
-// Text-to-Speech
-function playTTS() {
-  const text = prompt("Enter text to speak:");
-  if (!text) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'en-US';
-  speechSynthesis.speak(utter);
-}
-
-// Whisper Upload
-async function uploadWhisper() {
-  const fileInput = document.getElementById("audioFile");
-  const file = fileInput.files[0];
-  if (!file) return alert("Please select an audio file.");
-  const key = prompt("Enter OpenAI API key:");
-  if (!key) return;
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("model", "whisper-1");
-
-  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${key}` },
-    body: formData
-  });
-  const result = await response.json();
-  alert("Transcription: " + (result.text || 'Error'));
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  const faders = document.querySelectorAll(".fade-in");
-
-  const appearOptions = {
-    threshold: 0.2,
-    rootMargin: "0px 0px -50px 0px"
-  };
-
-  const appearOnScroll = new IntersectionObserver(function(entries, observer) {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add("visible");
-      observer.unobserve(entry.target);
+  try {
+    const res = await fetch("https://api-inference.huggingface.co/models/facebook/bart-large-cnn", {
+      method:"POST",
+      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+      body: JSON.stringify({inputs:text})
     });
-  }, appearOptions);
+    const data = await res.json();
+    alert("Summary: " + (data[0]?.summary_text || 'Error'));
+  } catch(e){ alert("Error summarizing: "+e); }
+}
 
-  faders.forEach(fader => {
-    appearOnScroll.observe(fader);
-  });
-});
+// ----- Voice Command Auto-Start -----
+function startVoiceCommand() {
+  const status = document.getElementById("voiceCommandStatus");
+  if(!('webkitSpeechRecognition' in window)){
+    status.innerText="Voice Command: Not supported in this browser"; return;
+  }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang="en-US"; recognition.interimResults=false; recognition.continuous=true;
+  let isListeningForCommand=false; let commandTimeout;
+  recognition.onstart=()=>{ status.innerText="Voice Command: Listening..."; };
+  recognition.onresult=(event)=>{
+    let spokenText=event.results[event.results.length-1][0].transcript.toLowerCase().trim();
+    console.log("DEBUG Command:", spokenText);
+
+    if(!isListeningForCommand){
+      if(spokenText.includes("jetha")){
+        isListeningForCommand=true;
+        status.innerText="Jetha Activated! Awaiting command...";
+        clearTimeout(commandTimeout);
+        commandTimeout=setTimeout(()=>{ isListeningForCommand=false; status.innerText="Voice Command: Listening for 'Jetha'..."; },10000);
+      } else { status.innerText=`Say "Jetha" to activate. Heard: "${spokenText}"`; }
+      return;
+    }
+
+    // Handle commands
+    if(spokenText.includes("scroll down")) scrollToNextFeature();
+    else if(spokenText.includes("scroll up")) scrollToPreviousFeature();
+    else if(spokenText.includes("summarize")){ document.querySelector("#feature2").scrollIntoView({behavior:"smooth"}); summarizeText(); }
+    else if(spokenText.includes("read") || spokenText.includes("play audio") || spokenText.includes("read aloud")){ document.querySelector("#feature3").scrollIntoView({behavior:"smooth"}); speakText(); }
+    else if(spokenText.includes("speech to text") || spokenText.includes("start recording") || spokenText.includes("speech")){ document.querySelector("#feature1").scrollIntoView({behavior:"smooth"}); startRecording(); }
+    else status.innerText=`Voice Command: "${spokenText}" not recognized`;
+    
+    isListeningForCommand=false;
+    clearTimeout(commandTimeout);
+  };
+  recognition.onerror = (e)=>{ status.innerText="Voice Command Error: "+e.error; };
+  recognition.start();
+}
+document.addEventListener("DOMContentLoaded", startVoiceCommand);
+
+// ----- Scroll Helpers -----
+function scrollToNextFeature(){
+  const sections=document.querySelectorAll("section");
+  const currentScroll=window.scrollY;
+  for(let i=0;i<sections.length;i++){ if(sections[i].offsetTop>currentScroll+10){ sections[i].scrollIntoView({behavior:"smooth"}); break; } }
+}
+function scrollToPreviousFeature(){
+  const sections=document.querySelectorAll("section");
+  const currentScroll=window.scrollY;
+  for(let i=sections.length-1;i>=0;i--){ if(sections[i].offsetTop<currentScroll-10){ sections[i].scrollIntoView({behavior:"smooth"}); break; } }
+}
