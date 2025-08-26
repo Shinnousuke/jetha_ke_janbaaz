@@ -89,25 +89,109 @@ document.addEventListener('keydown', e => {
   else if(e.key==='Escape'){ stopSpeech(); }
 });
 
-// ----- Speech-to-Text -----
+// ----- Speech-to-Text with History -----
 let recognition;
+let transcriptHistory = [];
+let lastTranscript = "";
+
 function startRecording() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SpeechRecognition) return alert('SpeechRecognition not supported in this browser.');
+  if (!SpeechRecognition) {
+    speakTextDirect("Sorry, your browser does not support speech recognition.");
+    return;
+  }
+
   recognition = new SpeechRecognition();
-  recognition.lang='en-US';
-  recognition.continuous=true;
-  recognition.interimResults=true;
+  recognition.lang = 'en-US';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  const historyBox = document.getElementById("transcriptHistory");
+  historyBox.textContent = "🎙 Listening...";
+
+  playBeep();
+
   recognition.onresult = (event) => {
-    let transcript='';
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      if(event.results[i].isFinal) transcript += event.results[i][0].transcript+' ';
+    let finalTranscript = "";
+    let interimTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript + " ";
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
     }
-    console.log('Transcript:', transcript);
-    alert("Captured: " + transcript);
+
+    if (finalTranscript.trim()) {
+      lastTranscript = finalTranscript.trim();
+      transcriptHistory.push(lastTranscript);
+
+      // Update UI with history
+      historyBox.innerHTML = transcriptHistory.map((t, idx) => `<div><b>${idx + 1}.</b> ${t}</div>`).join("");
+
+      // Speak back confirmation
+      speakTextDirect("You said: " + lastTranscript);
+    } else {
+      historyBox.innerHTML = transcriptHistory.join("<br>") + `<br><i>${interimTranscript}</i>`;
+    }
   };
+
+  recognition.onerror = (e) => {
+    speakTextDirect("Error: " + e.error);
+  };
+
+  recognition.onend = () => {
+    speakTextDirect("Speech recognition stopped.");
+    playBeep();
+  };
+
   recognition.start();
 }
+
+function stopRecording() {
+  if (recognition) {
+    recognition.stop();
+    playBeep();
+  }
+}
+
+// Replay last transcript
+function readLastTranscript() {
+  if (!lastTranscript) {
+    speakTextDirect("No transcript available yet.");
+  } else {
+    speakTextDirect("Last transcript was: " + lastTranscript);
+  }
+}
+
+// Helper: quick speak function
+function speakTextDirect(message) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(message);
+  u.lang = 'en-US';
+  speechSynthesis.speak(u);
+}
+
+// Helper: short beep sound
+function playBeep() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = 600;
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(() => osc.stop(), 150);
+}
+
+// ----- Keyboard Shortcuts -----
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key.toLowerCase() === "l") {
+    startRecording();
+  } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+    stopRecording();
+  }
+});
 
 // ----- Summarization using Hugging Face API -----
 async function summarizeText() {
@@ -176,3 +260,4 @@ function scrollToPreviousFeature(){
   const currentScroll=window.scrollY;
   for(let i=sections.length-1;i>=0;i--){ if(sections[i].offsetTop<currentScroll-10){ sections[i].scrollIntoView({behavior:"smooth"}); break; } }
 }
+
