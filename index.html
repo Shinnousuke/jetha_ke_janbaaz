@@ -1,73 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AI Accessibility Tool</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Header -->
   <header>
-    <div class="logo">AI Tool</div>
-    <nav>
+    <div class="logo">AI Accessibility Tool</div>
+    <nav aria-label="Main navigation">
       <ul>
         <li><a href="#feature1">Speech-to-Text</a></li>
         <li><a href="#feature2">Summarize</a></li>
-        <li><a href="#feature3">TTS</a></li>
-        <li><a href="#feature4">Whisper Upload</a></li>
+        <li><a href="#feature3">Text-to-Speech</a></li>
       </ul>
     </nav>
   </header>
 
-  <!-- Feature 1 -->
-  <section class="feature light" id="feature1">
+  <div id="voiceCommandStatus" style="position: fixed; bottom: 10px; right: 10px; background: #000; color: #fff; padding: 10px; border-radius: 8px; font-size: 14px;">
+    Voice Command: Initializing...
+  </div>
+
+  <!-- Feature 1: Speech-to-Text -->
+  <section class="feature light" id="feature1" aria-labelledby="stt-heading">
     <div class="content">
-      <h1>OUT THERE</h1>
+      <h1 id="stt-heading">OUT THERE</h1>
       <h2>Live Speech-to-Text</h2>
       <p>Convert speech into text in real time for better accessibility.</p>
       <button onclick="startRecording()">Try Now</button>
     </div>
-    <img src="C:\Users\Admin\Desktop\internship_projects\ai_accessiblity_tool_hackaton\pic.jpg" alt="Speech to Text">
+    <img src="images/stt.jpg" alt="Speech to Text">
   </section>
 
-  <!-- Feature 2 -->
-  <section class="feature dark" id="feature2">
-    <img src="C:\Users\Admin\Desktop\internship_projects\ai_accessiblity_tool_hackaton\summary.jpg" alt="Summarization">
+  <!-- Feature 2: Summarization -->
+  <section class="feature dark" id="feature2" aria-labelledby="summarize-heading">
+    <img src="images/summary.jpg" alt="Summarization">
     <div class="content">
-      <h1>IMMERSION</h1>
+      <h1 id="summarize-heading">IMMERSION</h1>
       <h2>Summarization</h2>
       <p>Summarize long transcripts using Hugging Face API instantly.</p>
       <button onclick="summarizeText()">Summarize</button>
     </div>
   </section>
 
-  <!-- Feature 3 -->
-  <section class="feature light" id="feature3">
+  <!-- Feature 3: Text-to-Speech -->
+  <section class="feature light" id="feature3" aria-labelledby="tts-heading">
     <div class="content">
-      <h1>TO INFINITY</h1>
+      <h1 id="tts-heading">TO INFINITY</h1>
       <h2>Text-to-Speech Playback</h2>
       <p>Listen to your text content with natural-sounding voices.</p>
-      <button onclick="playTTS()">Play Audio</button>
-    </div>
-    <img src="C:\Users\Admin\Desktop\internship_projects\ai_accessiblity_tool_hackaton\pic.jpg"alt="Text to Speech">
-  </section>
 
-  <!-- Feature 4 -->
-  <section class="feature dark" id="feature4">
-    <img src="C:\Users\Admin\Desktop\internship_projects\ai_accessiblity_tool_hackaton\summary.jpg" alt="Whisper Upload">
-    <div class="content">
-      <h1>STREAMLINE</h1>
-      <h2>Whisper Audio Upload</h2>
-      <p>Upload audio files and get accurate transcriptions via OpenAI Whisper.</p>
-      <input type="file" id="audioFile" accept="audio/*">
-      <button onclick="uploadWhisper()">Upload & Transcribe</button>
+      <label for="textInput" class="visually-hidden">Text to speak</label>
+      <textarea id="textInput" placeholder="Type text here..." rows="6"></textarea>
+
+      <div class="controls">
+        <div class="control-row">
+          <label for="voices">Voice</label>
+          <select id="voices"></select>
+        </div>
+        <div class="control-row">
+          <label for="rate">Rate <span id="rateVal">1</span></label>
+          <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" />
+        </div>
+        <div class="control-row">
+          <label for="pitch">Pitch <span id="pitchVal">1</span></label>
+          <input type="range" id="pitch" min="0" max="2" step="0.1" value="1" />
+        </div>
+        <div class="control-row">
+          <label for="liveToggle">Speak as you type</label>
+          <input id="liveToggle" type="checkbox" />
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="speakBtn">Speak</button>
+        <button id="stopBtn">Stop</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resumeBtn">Resume</button>
+        <button id="clearBtn">Clear</button>
+      </div>
     </div>
+    <img src="images/tts-illustration.jpg" alt="Text to Speech">
   </section>
 
   <!-- Footer -->
   <footer>
-    <p>© 2025 AI Accessibility Tool | Built with ❤️ - Jetha Ke Janbaaz</p>
+    <p>© 2025 AI Accessibility Tool | Built with ❤️</p>
   </footer>
 
   <script src="script.js"></script>
